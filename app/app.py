@@ -6,19 +6,19 @@ The requirements for this script were as below:
 * Requirement: Data Persistence: Retains the game state and scoreboard.
 * Requirement: Restart: Allows the user to restart the game, clearing the scoreboard and resetting the game state.
 
-I believed that I have met all the requirements below. If I had had more time, I would have
-* added a selection cursor for the choices instead of typing
-* added colored feedback using a Logger object
-* increased the test coverage
+If I had more time, I would have:
+* Implemented a selection cursor for choosing options instead of requiring text input.
+* Enhanced feedback with coloured messages using a Logger object.
+* Expanded test coverage for better reliability.
 
-Notes: I decided to go for a function orientated approach here as the code is relatively simple. if the code were
-to become any more complex, I would consider moving to OOP to make the code more readable. """
+I chose a function-oriented approach since the code is relatively simple. If it became more complex,
+I would consider transitioning to an object-oriented design to improve readability and maintainability. """
 
 import datetime as dt
 import json
 from typing import Tuple
 
-__version__ = '0.4.2'
+__version__ = '0.4.3'
 
 # ----------------------------------------------------- SCORE FILE -----------------------------------------------------
 
@@ -27,7 +27,7 @@ SCORE_FILENAME = 'scores.json'
 
 def retrieve_scores(filename: str = SCORE_FILENAME) -> list:
     """ Return the scores from the json file
-    :param str filename: filename """
+    :param str filename: path of the file storing the scores """
 
     try:
         with open(filename, "r") as file:
@@ -41,7 +41,7 @@ def save_score(score: dict, start_dt: dt.datetime, update: bool, filename: str =
     :param dict score: current score to store
     :param dt.datetime start_dt: game start date and time
     :param bool update: if True, update the last score in the file, else appends to it
-    :param str filename: filename"""
+    :param str filename: path of the file to store the scores """
 
     # Load the previous scores
     scores = retrieve_scores(filename)
@@ -63,17 +63,15 @@ def save_score(score: dict, start_dt: dt.datetime, update: bool, filename: str =
 
 # ----------------------------------------------------- GAME LOGIC -----------------------------------------------------
 
-
-# List of choices for both players
-CHOICES = ['rock', 'paper', 'scissors', 'lizard', 'spock']
-
 # Defines a dictionary that maps each choice (key) to a list of tuples.
 # Each tuple contains a choice that it defeats and the verb describing how it wins.
+# This dictionary can be easily extended to add more choices
 LOGIC_DICT = {"scissors": [("paper", "cut"), ("lizard", "decapitates")],
               "paper": [("rock", "covers"), ("spock", "disproves")],
               "rock": [("scissors", "crushes"), ("lizard", "crushes")],
               "lizard": [("paper", "eats"), ("spock", "poisons")],
               "spock": [("scissors", "smashes"), ("rock", "vaporizes")]}
+CHOICES = list(LOGIC_DICT.keys())  # list of choices for both players
 
 
 def get_player_choice(player_name: str) -> str:
@@ -124,10 +122,10 @@ def get_playera_score(choice_A: str, choice_B: str, player_A: str) -> int:
 
 def exit_game(player: str, score: dict, start_dt: dt.datetime, replace: bool) -> None:
     """ Exit the game by displaying the final score and saving it to the json file
-    :param player: name of the player who decided to end the game
-    :param score: score dictionary
-    :param start_dt: game start datetime
-    :param replace: if True, replace the last score, else append """
+    :param str player: name of the player who decided to end the game
+    :param dict score: score dictionary
+    :param dt.datetime start_dt: game start datetime
+    :param bool replace: if True, replace the last score, else append """
 
     print(f"{player} has decided to quit the game. Game ending. Thanks for playing.")
 
@@ -145,19 +143,24 @@ def exit_game(player: str, score: dict, start_dt: dt.datetime, replace: bool) ->
 
 
 def start_game() -> Tuple[dict, dt.datetime]:
-    """ Start the game by setting the score to its initial values and capture the start datetime """
-    current_score = {'Player 1': 0, 'Player 2': 0}
+    """ Start the game by setting the score to its initial values and capture the start datetime
+    :return: the initial score dictionary and the game start game """
+
+    score = {'Player 1': 0, 'Player 2': 0}
     start_dt = dt.datetime.now()
-    return current_score, start_dt
+    return score, start_dt
 
 
 def reset_game() -> Tuple[dict, dt.datetime]:
-    """ Reset the current game state """
+    """ Reset the current game state
+    :return: the initial score dictionary and the game start game """
     print('Resetting the current score and game start datetime')
     return start_game()
 
 
 def play() -> None:
+    """ Play the game """
+
     current_score, start_dt = start_game()  # set the new start score and datetime
     update_score = False  # determines if the last score is replaced or not
     scores = retrieve_scores()  # previous scores
