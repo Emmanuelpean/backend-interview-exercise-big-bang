@@ -18,7 +18,7 @@ import datetime as dt
 import json
 from typing import Tuple
 
-__version__ = '0.4.0'
+__version__ = '0.4.2'
 
 # ----------------------------------------------------- SCORE FILE -----------------------------------------------------
 
