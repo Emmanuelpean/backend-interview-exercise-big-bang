@@ -1,56 +1,54 @@
-# Asked: Interactive Gameplay: Players can select their choice, and the winner is determined based on the rules.
-# Implemented: Possible improvement: adding a selection cursor for the choices instead of typing
+""" This script (and the additional test.py) was written in ~3h for Automata.
+The requirements for this script were as below:
+* Requirement: Interactive Gameplay: Players can select their choice, and the winner is determined based on the rules.
+* Requirement: Clear Visual Feedback: Winning and losing outcomes are displayed in an engaging and intuitive way.
+* Requirement: Scoreboard: Tracks the points of the user and the computer across multiple rounds.
+* Requirement: Data Persistence: Retains the game state and scoreboard.
+* Requirement: Restart: Allows the user to restart the game, clearing the scoreboard and resetting the game state.
 
-# Asked: Clear Visual Feedback: Winning and losing outcomes are displayed in an engaging and intuitive way.
-# Implement. Possible improvement: Adding colored feedback using a Logger object
+I believed that I have met all the requirements below. If I had had more time, I would have
+* added a selection cursor for the choices instead of typing
+* added colored feedback using a Logger object
+* increased the test coverage
 
-# Scoreboard: Tracks the points of the user and the computer across multiple rounds.
-# Implemented
+Notes: I decided to go for a function orientated approach here as the code is relatively simple. if the code were
+to become any more complex, I would consider moving to OOP to make the code more readable. """
 
-# Data Persistence: Retains the game state and scoreboard.
-# Implemented
-
-# Restart: Allows the user to restart the game, clearing the scoreboard and resetting the game state.
-# Implemented
-
-from typing import Tuple
-import os
-import json
 import datetime as dt
+import json
+from typing import Tuple
+
+__version__ = '0.4.0'
 
 # ----------------------------------------------------- SCORE FILE -----------------------------------------------------
 
 SCORE_FILENAME = 'scores.json'
 
-# Create the score file
-if not os.path.exists(SCORE_FILENAME):
-    with open(SCORE_FILENAME, 'w') as ofile:
-        # noinspection PyTypeChecker
-        json.dump([], ofile)
 
-
-def retrieve_scores() -> list:
-    """ Return the scores from the json file """
+def retrieve_scores(filename: str = SCORE_FILENAME) -> list:
+    """ Return the scores from the json file
+    :param str filename: filename """
 
     try:
-        with open(SCORE_FILENAME, "r") as file:
+        with open(filename, "r") as file:
             return json.load(file)
-    except json.decoder.JSONDecodeError:
+    except (json.decoder.JSONDecodeError, FileNotFoundError):
         return []
 
 
-def save_score(score: dict, start_dt: dt.datetime, replace: bool) -> None:
+def save_score(score: dict, start_dt: dt.datetime, update: bool, filename: str = SCORE_FILENAME) -> None:
     """Append the score to the json score file
     :param dict score: current score to store
     :param dt.datetime start_dt: game start date and time
-    :param bool replace: if True, replace the last score in the file, else appends it """
+    :param bool update: if True, update the last score in the file, else appends to it
+    :param str filename: filename"""
 
     # Load the previous scores
-    scores = retrieve_scores()
+    scores = retrieve_scores(filename)
 
     # Add the datetimes to the score and either replace the last score or append it to the list
     score.update({"Last Played On": dt.datetime.now().isoformat()})
-    if replace:
+    if update:
         score.update({"Started On": scores[-1]["Started On"]})
         scores[-1] = score
     else:
@@ -58,7 +56,7 @@ def save_score(score: dict, start_dt: dt.datetime, replace: bool) -> None:
         scores.append(score)
 
     # Save the new score
-    with open(SCORE_FILENAME, "w") as file:
+    with open(filename, "w") as file:
         # noinspection PyTypeChecker
         json.dump(scores, file, indent=4)
 
@@ -67,11 +65,11 @@ def save_score(score: dict, start_dt: dt.datetime, replace: bool) -> None:
 
 
 # List of choices for both players
-choices = ['rock', 'paper', 'scissors', 'lizard', 'spock']
+CHOICES = ['rock', 'paper', 'scissors', 'lizard', 'spock']
 
 # Defines a dictionary that maps each choice (key) to a list of tuples.
 # Each tuple contains a choice that it defeats and the verb describing how it wins.
-logic_dict = {"scissors": [("paper", "cut"), ("lizard", "decapitates")],
+LOGIC_DICT = {"scissors": [("paper", "cut"), ("lizard", "decapitates")],
               "paper": [("rock", "covers"), ("spock", "disproves")],
               "rock": [("scissors", "crushes"), ("lizard", "crushes")],
               "lizard": [("paper", "eats"), ("spock", "poisons")],
@@ -84,9 +82,9 @@ def get_player_choice(player_name: str) -> str:
     :return: the player choice or raise an exception if the choice is not in the list """
 
     while True:
-        choice = input(f"{player_name}: Please choose an option in ({', '.join(choices)})"
+        choice = input(f"{player_name}: Please choose an option in ({', '.join(CHOICES)})"
                        f", type 'quit' to quit the game, or type 'reset' to reset the current game.").strip().lower()
-        if choice in choices + ["quit", "reset"]:
+        if choice in CHOICES + ["quit", "reset"]:
             break
         else:
             print('Choice is not in the list. Please try again.')
@@ -110,15 +108,16 @@ def get_playera_score(choice_A: str, choice_B: str, player_A: str) -> int:
     :param str player_A: player name associated with choice A
     :return: 1 victory point if choice A beats choice B, else 0 """
 
-    wins_against_tuple = logic_dict[choice_A]  # list of tuples which choice A beats
+    wins_against_tuple = LOGIC_DICT[choice_A]  # list of tuples which choice A beats
     wins_against_choices = [tup[0] for tup in wins_against_tuple]  # list of choices which choice A beats
     try:
         verb_index = wins_against_choices.index(choice_B)
         verb = wins_against_tuple[verb_index][1]
-        print(f"{choice_A.capitalize()} {verb} {choice_B}. {player_A} wins this round!!!")
+        print(f"{choice_A.capitalize()} {verb} {choice_B.capitalize()}. {player_A} wins this round!!!")
         return 1
     except ValueError:
         return 0
+
 
 # --------------------------------------------------- GAME FUNCTIONS ---------------------------------------------------
 
@@ -159,30 +158,44 @@ def reset_game() -> Tuple[dict, dt.datetime]:
 
 
 def play() -> None:
-    # Set the new start score and datetime
-    current_score, start_dt = start_game()
-    replace = False
+    current_score, start_dt = start_game()  # set the new start score and datetime
+    update_score = False  # determines if the last score is replaced or not
+    scores = retrieve_scores()  # previous scores
 
-    # Check if the players want to continue the previous games
-    scores = retrieve_scores()  # check for previous scores
     if scores:
+
+        # Ask if the player wants to check previous scores
         while True:
-            question = input('Do you want to resume your previous game? Y/N')
-            if question == 'Y':
-                current_score = scores[-1]
-                replace = True
+            check_scores = input("Do you want to check previous scores? (Y/N) ").strip().lower()
+            if check_scores == "y":
+                print("\nPrevious scores:")
+                for score in scores:
+                    print(f"Started on: {score['Started On']} | Player 1: {score['Player 1']} | "
+                          f"Player 2: {score['Player 2']}")
                 break
-            elif question == 'N':
+            elif check_scores == "n":
                 break
             else:
-                print('Incorrect response. Please try again.')
+                print("Invalid input. Please try again.")
+
+        # Check if the players want to continue the previous games
+        while True:
+            question = input("Do you want to resume your previous game? (Y/N)").strip().lower()
+            if question == "y":
+                current_score = scores[-1]
+                update_score = True
+                break
+            elif question == "n":
+                break
+            else:
+                print("Invalid input. Please try again.")
 
     while True:
 
         # Get player 1 choice
         player1_choice = get_player_choice("Player 1")
         if player1_choice == "quit":
-            exit_game("Player 1", current_score, start_dt, replace)
+            exit_game("Player 1", current_score, start_dt, update_score)
             break
         if player1_choice == "reset":
             current_score, start_dt = reset_game()
@@ -191,16 +204,19 @@ def play() -> None:
         # Get player 2 choice
         player2_choice = get_player_choice("Player 2")
         if player2_choice == "quit":
-            exit_game("Player 2", current_score, start_dt, replace)
+            exit_game("Player 2", current_score, start_dt, update_score)
             break
         if player1_choice == "reset":
             current_score, start_dt = reset_game()
             continue
 
         # Determine who won
-        print(f"\nPlayer 1 selected {player1_choice} while Player 2 selected {player2_choice}.")
+        print(
+            f"\nPlayer 1 selected {player1_choice.capitalize()} while Player 2 selected {player2_choice.capitalize()}.")
         if player1_choice == player2_choice:
             print("It's a tie!!!")
+
+        # Tally the scores
         current_score['Player 1'] += get_playera_score(player1_choice, player2_choice, "Player 1")
         current_score['Player 2'] += get_playera_score(player2_choice, player1_choice, "Player 2")
 
