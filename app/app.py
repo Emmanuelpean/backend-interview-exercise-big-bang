@@ -13,7 +13,7 @@
 # Restart: Allows the user to restart the game, clearing the scoreboard and resetting the game state.
 # Implemented
 
-from typing import Literal, get_args
+from typing import Tuple
 import os
 import json
 import datetime as dt
@@ -29,7 +29,7 @@ if not os.path.exists(SCORE_FILENAME):
         json.dump([], ofile)
 
 
-def retrieve_scores():
+def retrieve_scores() -> list:
     """ Return the scores from the json file """
 
     try:
@@ -67,8 +67,7 @@ def save_score(score: dict, start_dt: dt.datetime, replace: bool) -> None:
 
 
 # List of choices for both players
-choices = Literal['rock', 'paper', 'scissors', 'lizard', 'spock']  # Literal adds value check and auto-completion in IDE
-choices_list = list(get_args(choices))
+choices = ['rock', 'paper', 'scissors', 'lizard', 'spock']
 
 # Defines a dictionary that maps each choice (key) to a list of tuples.
 # Each tuple contains a choice that it defeats and the verb describing how it wins.
@@ -85,16 +84,16 @@ def get_player_choice(player_name: str) -> str:
     :return: the player choice or raise an exception if the choice is not in the list """
 
     while True:
-        choice = input(f"{player_name}: Please choose an option in ({', '.join(choices_list)})"
+        choice = input(f"{player_name}: Please choose an option in ({', '.join(choices)})"
                        f", type 'quit' to quit the game, or type 'reset' to reset the current game.").strip().lower()
-        if choice in choices_list + ["quit", "reset"]:
+        if choice in choices + ["quit", "reset"]:
             break
         else:
             print('Choice is not in the list. Please try again.')
     return choice
 
 
-def display_score(score: dict, adjective: str = '') -> None:
+def display_score(score: dict, adjective: str) -> None:
     """ Print the score in the console
     :param dict score: score dictionary containing values for Player 1 and Player 2
     :param str adjective: optional string characterising the score """
@@ -124,7 +123,7 @@ def get_playera_score(choice_A: str, choice_B: str, player_A: str) -> int:
 # --------------------------------------------------- GAME FUNCTIONS ---------------------------------------------------
 
 
-def exit_game(player: str, score: dict, start_dt: dt.datetime, replace: bool):
+def exit_game(player: str, score: dict, start_dt: dt.datetime, replace: bool) -> None:
     """ Exit the game by displaying the final score and saving it to the json file
     :param player: name of the player who decided to end the game
     :param score: score dictionary
@@ -146,20 +145,20 @@ def exit_game(player: str, score: dict, start_dt: dt.datetime, replace: bool):
     save_score(score, start_dt, replace)
 
 
-def start_game():
+def start_game() -> Tuple[dict, dt.datetime]:
     """ Start the game by setting the score to its initial values and capture the start datetime """
     current_score = {'Player 1': 0, 'Player 2': 0}
     start_dt = dt.datetime.now()
     return current_score, start_dt
 
 
-def reset_game():
+def reset_game() -> Tuple[dict, dt.datetime]:
     """ Reset the current game state """
     print('Resetting the current score and game start datetime')
     return start_game()
 
 
-def play():
+def play() -> None:
     # Set the new start score and datetime
     current_score, start_dt = start_game()
     replace = False
@@ -199,7 +198,7 @@ def play():
             continue
 
         # Determine who won
-        print(f"\n\nPlayer 1 selected {player1_choice} while Player 2 selected {player2_choice}.")
+        print(f"\nPlayer 1 selected {player1_choice} while Player 2 selected {player2_choice}.")
         if player1_choice == player2_choice:
             print("It's a tie!!!")
         current_score['Player 1'] += get_playera_score(player1_choice, player2_choice, "Player 1")
