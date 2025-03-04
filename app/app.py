@@ -215,8 +215,6 @@ def play() -> None:
             f"\nPlayer 1 selected {player1_choice.capitalize()} while Player 2 selected {player2_choice.capitalize()}.")
         if player1_choice == player2_choice:
             print("It's a tie!!!")
-
-        # Tally the scores
         current_score['Player 1'] += get_playera_score(player1_choice, player2_choice, "Player 1")
         current_score['Player 2'] += get_playera_score(player2_choice, player1_choice, "Player 2")
 
